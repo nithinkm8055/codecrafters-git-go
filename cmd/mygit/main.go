@@ -85,7 +85,7 @@ func main() {
 					if readFileContent[i] == 0 {
 						flag = true
 					}
-					if flag {
+					if flag && readFileContent[i] != 0 {
 						content += string(readFileContent[i])
 					}
 				}
