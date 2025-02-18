@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"compress/zlib"
+	"crypto/sha1"
 	"errors"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 )
 
 func DecompressAndRead(fileName string) (string, error) {
@@ -92,6 +95,33 @@ func main() {
 
 				fmt.Print(content)
 			}
+		}
+	case "hash-object":
+		if len(os.Args) > 2 {
+			file, _ := os.ReadFile(os.Args[3])
+			stats, _ := os.Stat(os.Args[3])
+			content := string(file)
+			contentAndHeader := fmt.Sprintf("blob %d\x00%s", stats.Size(), content)
+			sha := (sha1.Sum([]byte(contentAndHeader)))
+			hash := fmt.Sprintf("%x", sha)
+			blobName := []rune(hash)
+			blobPath := ".git/objects/"
+			for i, v := range blobName {
+				blobPath += string(v)
+				if i == 1 {
+					blobPath += "/"
+				}
+			}
+			var buffer bytes.Buffer
+			z := zlib.NewWriter(&buffer)
+			z.Write([]byte(contentAndHeader))
+			z.Close()
+			os.MkdirAll(filepath.Dir(blobPath), os.ModePerm)
+			f, _ := os.Create(blobPath)
+			defer f.Close()
+			f.Write(buffer.Bytes())
+			fmt.Print(hash)
+
 		}
 
 	default:
