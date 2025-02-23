@@ -175,7 +175,7 @@ func main() {
 			readFileContent, _ := DecompressAndRead(fileName)
 			// Git object header processing (e.g., tree or blob)
 			// A Git object is composed of a header and compressed content
-			header, objectData, err := parseGitObject(content)
+			header, objectData, err := parseGitObject(readFileContent)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "error parsing git object: %s\n", err)
 				return
