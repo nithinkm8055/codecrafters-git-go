@@ -173,26 +173,12 @@ func main() {
 			}
 
 			readFileContent, _ := DecompressAndRead(fileName)
-			// Git object header processing (e.g., tree or blob)
-			// A Git object is composed of a header and compressed content
-			header, objectData, err := parseGitObject(readFileContent)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "error parsing git object: %s\n", err)
-				return
-			}
-
-			// Process the object based on its type
-			if header.objectType == "tree" {
-				// Handle tree object (directory)
-				fmt.Println("This is a tree object")
-				// Process the tree object (listing its contents, for example)
-				fmt.Println(objectData)
-			} else if header.objectType == "blob" {
-				// Handle blob object (file content)
-				fmt.Println("This is a blob object")
-				fmt.Println(objectData)
-			} else {
-				fmt.Println("Unsupported object type")
+			split := bytes.Split([]byte(readFileContent), []byte("\x00"))
+			use := split[1 : len(split)-1]
+			for _, dByte := range use {
+				splitter := []byte(" ")
+				splitByte := bytes.Split(dByte, splitter)[1]
+				fmt.Println(string(splitByte))
 			}
 		}
 
