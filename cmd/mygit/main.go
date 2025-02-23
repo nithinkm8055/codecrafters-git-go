@@ -82,6 +82,8 @@ func main() {
 					fmt.Fprintf(os.Stderr, "%s\n", err.Error())
 					return
 				}
+
+				// TODO: revisit and simplify this
 				content := ""
 				flag := false
 				for i := range readFileContent {
@@ -121,7 +123,34 @@ func main() {
 			defer f.Close()
 			f.Write(buffer.Bytes())
 			fmt.Print(hash)
+		}
+	case "ls-tree":
+		if len(os.Args) > 2 {
+			// nameOnly := os.Args[2]
+			hash := os.Args[3]
 
+			dirName := hash[:2]
+			fileName := hash[2:]
+
+			if err := os.Chdir(fmt.Sprintf(".git/objects/%s", dirName)); err != nil {
+				fmt.Fprintf(os.Stderr, "specified hash %s does not exist\n", hash)
+				return
+			}
+
+			readFileContent, _ := DecompressAndRead(fileName)
+			// TODO: revisit and simplify this
+			content := ""
+			flag := false
+			for i := range readFileContent {
+				if readFileContent[i] == 0 {
+					flag = true
+				}
+				if flag && readFileContent[i] != 0 {
+					content += string(readFileContent[i])
+				}
+			}
+
+			fmt.Print(content)
 		}
 
 	default:
