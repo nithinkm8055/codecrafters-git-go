@@ -9,42 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strconv"
-	"strings"
 )
-
-type GitObjectHeader struct {
-	objectType string
-	size       int
-}
-
-func parseGitObject(content string) (*GitObjectHeader, string, error) {
-	// Git object header format is: "<object_type> <size>\0"
-	parts := strings.SplitN(content, " ", 2)
-	if len(parts) < 2 {
-		return nil, "", fmt.Errorf("invalid object header")
-	}
-
-	objectType := parts[0]
-	rest := parts[1]
-
-	// The rest of the string contains the size and the actual content, so we need to locate the null byte separator
-	nullByteIndex := strings.IndexByte(rest, 0)
-	if nullByteIndex == -1 {
-		return nil, "", fmt.Errorf("invalid object format (missing null byte)")
-	}
-
-	sizeStr := rest[:nullByteIndex]
-	size, err := strconv.Atoi(sizeStr)
-	if err != nil {
-		return nil, "", fmt.Errorf("invalid size in object header: %v", err)
-	}
-
-	// The object data starts after the null byte
-	objectData := rest[nullByteIndex+1:]
-
-	return &GitObjectHeader{objectType: objectType, size: size}, objectData, nil
-}
 
 func DecompressAndRead(fileName string) (string, error) {
 	compressedFile, err := os.Open(fileName)
