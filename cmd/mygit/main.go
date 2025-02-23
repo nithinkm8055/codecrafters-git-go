@@ -9,7 +9,42 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 )
+
+type GitObjectHeader struct {
+	objectType string
+	size       int
+}
+
+func parseGitObject(content string) (*GitObjectHeader, string, error) {
+	// Git object header format is: "<object_type> <size>\0"
+	parts := strings.SplitN(content, " ", 2)
+	if len(parts) < 2 {
+		return nil, "", fmt.Errorf("invalid object header")
+	}
+
+	objectType := parts[0]
+	rest := parts[1]
+
+	// The rest of the string contains the size and the actual content, so we need to locate the null byte separator
+	nullByteIndex := strings.IndexByte(rest, 0)
+	if nullByteIndex == -1 {
+		return nil, "", fmt.Errorf("invalid object format (missing null byte)")
+	}
+
+	sizeStr := rest[:nullByteIndex]
+	size, err := strconv.Atoi(sizeStr)
+	if err != nil {
+		return nil, "", fmt.Errorf("invalid size in object header: %v", err)
+	}
+
+	// The object data starts after the null byte
+	objectData := rest[nullByteIndex+1:]
+
+	return &GitObjectHeader{objectType: objectType, size: size}, objectData, nil
+}
 
 func DecompressAndRead(fileName string) (string, error) {
 	compressedFile, err := os.Open(fileName)
@@ -138,19 +173,27 @@ func main() {
 			}
 
 			readFileContent, _ := DecompressAndRead(fileName)
-			// TODO: revisit and simplify this
-			content := ""
-			flag := false
-			for i := range readFileContent {
-				if readFileContent[i] == 0 {
-					flag = true
-				}
-				if flag && readFileContent[i] != 0 {
-					content += string(readFileContent[i])
-				}
+			// Git object header processing (e.g., tree or blob)
+			// A Git object is composed of a header and compressed content
+			header, objectData, err := parseGitObject(content)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "error parsing git object: %s\n", err)
+				return
 			}
 
-			fmt.Print(content)
+			// Process the object based on its type
+			if header.objectType == "tree" {
+				// Handle tree object (directory)
+				fmt.Println("This is a tree object")
+				// Process the tree object (listing its contents, for example)
+				fmt.Println(objectData)
+			} else if header.objectType == "blob" {
+				// Handle blob object (file content)
+				fmt.Println("This is a blob object")
+				fmt.Println(objectData)
+			} else {
+				fmt.Println("Unsupported object type")
+			}
 		}
 
 	default:
